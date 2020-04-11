@@ -27,19 +27,19 @@ get_deltas <- function(df, item, ph1, ph2) {
 }
 
 # Retorna para cada individuo la diferencia de puntajes entre dos fases sucesivas.
-# df_rnd: data frame con los datos de los grupos bajo configuración random
-# df_ht: data frame con los datos de los grupos bajo configuración heterogénea
+# df_series1: data frame con data de primera serie
+# df_series2: data frame con data de segunda serie
 # item: el diferencial semantico (comúnmente 1, 2 ó 3) 
 # ph1: la primera fase a considerar (1, 2 ó 3)
 # ph2: la segunda fase a considerar (1, 2 ó 3)
-build_ind_cmp_hist <- function(df_rnd, df_ht, item, ph1, ph2) {
-  dt_rnd <- get_deltas(df_rnd, item, ph1, ph2)
-  dt_rnd$type <- 0
-  dt_ht <- get_deltas(df_ht, item, ph1, ph2)
-  dt_ht$type <- 1
+build_ind_cmp_hist <- function(df_series1, df_series2, series_labels, item, ph1, ph2) {
+  df_series1 <- get_deltas(df_series1, item, ph1, ph2)
+  df_series1$type <- 0
+  df_series2 <- get_deltas(df_series2, item, ph1, ph2)
+  df_series2$type <- 1
   
-  dt_cmp <- rbind.data.frame(dt_rnd, dt_ht)
-  dt_cmp$type <- factor(dt_cmp$type, levels = c(0,1), labels = c('Random', 'Heterogeneous'))
+  dt_cmp <- rbind.data.frame(df_series1, df_series2)
+  dt_cmp$type <- factor(dt_cmp$type, levels = c(0,1), labels = series_labels)
 
   pt <- ggplot(dt_cmp, aes(x=delta, fill=type)) + 
     geom_histogram(position = 'identity', binwidth = 1, alpha = .7)
@@ -47,14 +47,15 @@ build_ind_cmp_hist <- function(df_rnd, df_ht, item, ph1, ph2) {
   return(pt)  
 }
 
-build_ind_cmp_density <- function(df_rnd, df_ht, item, ph1, ph2, delta = TRUE, phase_arg = 1) {
-  dt_rnd <- get_deltas(df_rnd, item, ph1, ph2)
-  dt_rnd$type <- 0
-  dt_ht <- get_deltas(df_ht, item, ph1, ph2)
-  dt_ht$type <- 1
+build_ind_cmp_density <- function(df_series1, df_series2, series_labels, 
+                                  item, ph1, ph2, delta = TRUE, phase_arg = 1) {
+  df_series1 <- get_deltas(df_series1, item, ph1, ph2)
+  df_series1$type <- 0
+  df_series2 <- get_deltas(df_series2, item, ph1, ph2)
+  df_series2$type <- 1
   
-  dt_cmp <- rbind.data.frame(dt_rnd, dt_ht)
-  dt_cmp$type <- factor(dt_cmp$type, levels = c(0,1), labels = c('Random', 'Heterogeneous'))
+  dt_cmp <- rbind.data.frame(df_series1, df_series2)
+  dt_cmp$type <- factor(dt_cmp$type, levels = c(0,1), labels = series_labels)
   
   # build chart title
   if (delta) {
@@ -134,17 +135,17 @@ save_ind_cmp_hist <- function(prefix, builder, df_rnd, df_ht, item, ph1, ph2) {
   ggsave(plot = hst, fname, device = "png", dpi = 300)
 }
 
-build_group_cmp_hist <- function(df_rnd, df_ht, item, ph1, ph2) {
-  dt_rnd <- get_group_coef_var(df_rnd, ph1, ph2)
-  dt_rnd <- dt_rnd[dt_rnd$df == item,] 
-  dt_rnd$type <- 0
+build_group_cmp_hist <- function(df_series1, df_series2, series_labels, item, ph1, ph2) {
+  df_series1 <- get_group_coef_var(df_series1, ph1, ph2)
+  df_series1 <- df_series1[df_series1$df == item,] 
+  df_series1$type <- 0
   
-  dt_ht <- get_group_coef_var(df_ht, ph1, ph2)
-  dt_ht <- dt_ht[dt_ht$df == item,] 
-  dt_ht$type <- 1
+  df_series2 <- get_group_coef_var(df_series2, ph1, ph2)
+  df_series2 <- df_series2[df_series2$df == item,] 
+  df_series2$type <- 1
   
-  dt_cmp <- rbind.data.frame(dt_rnd, dt_ht)
-  dt_cmp$type <- factor(dt_cmp$type, levels = c(0,1), labels = c('Random', 'Heterogeneous'))
+  dt_cmp <- rbind.data.frame(df_series1, df_series2)
+  dt_cmp$type <- factor(dt_cmp$type, levels = c(0,1), labels = series_labels)
   
   pt <- ggplot(dt_cmp, aes(x=delta_vcoef, fill=type)) + 
      geom_histogram(position = 'identity', binwidth = .5, alpha = .7)
@@ -152,17 +153,18 @@ build_group_cmp_hist <- function(df_rnd, df_ht, item, ph1, ph2) {
   return(pt)  
 }
 
-build_group_cmp_density <- function(df_rnd, df_ht, item, ph1, ph2, delta = TRUE, phase_arg = 1) {
-  dt_rnd <- get_group_coef_var(df_rnd, ph1, ph2)
-  dt_rnd <- dt_rnd[dt_rnd$df == item,] 
-  dt_rnd$type <- 0
+build_group_cmp_density <- function(df_series1, df_series2, series_labels, item, 
+                                    ph1, ph2, delta = TRUE, phase_arg = 1) {
+  df_series1 <- get_group_coef_var(df_series1, ph1, ph2)
+  df_series1 <- df_series1[df_series1$df == item,] 
+  df_series1$type <- 0
   
-  dt_ht <- get_group_coef_var(df_ht, ph1, ph2)
-  dt_ht <- dt_ht[dt_ht$df == item,] 
-  dt_ht$type <- 1
+  df_series2 <- get_group_coef_var(df_series2, ph1, ph2)
+  df_series2 <- df_series2[df_series2$df == item,] 
+  df_series2$type <- 1
   
-  dt_cmp <- rbind.data.frame(dt_rnd, dt_ht)
-  dt_cmp$type <- factor(dt_cmp$type, levels = c(0,1), labels = c('Random', 'Heterogeneous'))
+  dt_cmp <- rbind.data.frame(df_series1, df_series2)
+  dt_cmp$type <- factor(dt_cmp$type, levels = c(0,1), labels = series_labels)
 
   pt <- NA
   
