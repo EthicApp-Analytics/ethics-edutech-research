@@ -114,3 +114,16 @@ build_group_comparative_analytics_charts(data_random_201920,
                                          output_prefix,
                                          chart_width = 24,
                                          chart_height = 16)
+
+data <- list(data_random_201920, data_random_202010, data_hetero_202010)
+title_prefxs <- c("201920 RANDOM DS", "202010 RANDOM DS", "202010 HETERO DS")
+
+table <- NA
+for (i in 1:3) {
+  table <- build_summary_table(table, data[[i]], title_prefxs[[i]])
+}
+
+table
+
+write.csv(x = as.data.frame(table), file = "tables/data-summary.csv")
+

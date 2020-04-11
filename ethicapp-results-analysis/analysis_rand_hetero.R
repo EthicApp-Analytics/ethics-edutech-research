@@ -47,6 +47,14 @@ build_ind_cmp_hist <- function(df_series1, df_series2, series_labels, item, ph1,
   return(pt)  
 }
 
+build_stats_table <- function(df_series, item, ph, caption, filename) {
+  s <- summary(df_series[df_series$df == item & iteration = ph,]$sel)
+  t <- xtable(s, caption, 
+    "html", include.rownames=FALSE, caption.placement='top',
+    html.table.attributes='align="left"')
+  print(t, file=filename)
+}
+
 build_ind_cmp_density <- function(df_series1, df_series2, series_labels, 
                                   item, ph1, ph2, delta = TRUE, phase_arg = 1) {
   df_series1 <- get_deltas(df_series1, item, ph1, ph2)
@@ -276,3 +284,32 @@ get_group_coef_var <- function(df, ph1, ph2) {
   result <- sqldf(query)
   return(sqldf(query))
 }
+
+add_summary_table_row <- function(table = NA, df, item, phase, row_label) {
+  df_col <- df[df$df == item & df$iteration == phase,]$sel
+  df_sum <- t(as.data.frame(c(summary(df_col), sd(df_col))))
+  rownames(df_sum) <- c(row_label)
+  colnames(df_sum) <- c(colnames(df_sum)[1:6], "SD")
+  
+  if (!is.na(table)) {
+    table <- rbind.data.frame(table, df_sum)
+  }  
+  else {
+    table <- df_sum
+  }
+  
+  return(table)
+}
+
+build_summary_table <- function(table = NA, df, title_prefix) {
+  for (i in 1:3) {
+    table <- add_summary_table_row(table, df, i, 1, 
+                                   paste0(title_prefix, paste(i, "PH1")))
+    for (j in 2:3) {
+      table <- add_summary_table_row(table = table, df, i, j, 
+                                     paste0(title_prefix, paste(i, paste0("PH", j))))
+    }
+  }
+  return(table)
+}
+
