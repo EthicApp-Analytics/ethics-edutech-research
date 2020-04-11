@@ -43,5 +43,5 @@ vignettes/*.pdf
 *.xls
 *.csv
 
-plots/*
-tables/*
+/ethicapp-results-analysis/plots/
+/ethicapp-results-analysis/tables/
