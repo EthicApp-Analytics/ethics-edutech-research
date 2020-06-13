@@ -47,14 +47,6 @@ build_ind_cmp_hist <- function(df_series1, df_series2, series_labels, item, ph1,
   return(pt)  
 }
 
-build_stats_table <- function(df_series, item, ph, caption, filename) {
-  s <- summary(df_series[df_series$df == item & iteration = ph,]$sel)
-  t <- xtable(s, caption, 
-    "html", include.rownames=FALSE, caption.placement='top',
-    html.table.attributes='align="left"')
-  print(t, file=filename)
-}
-
 build_ind_cmp_density <- function(df_series1, df_series2, series_labels, 
                                   item, ph1, ph2, delta = TRUE, phase_arg = 1) {
   df_series1 <- get_deltas(df_series1, item, ph1, ph2)
@@ -254,10 +246,36 @@ build_group_cmp_density <- function(df_series1, df_series2, series_labels, item,
 # la media de la segunda, y la diferencia de las medias.
 get_group_mean_deltas <- function(df, item, ph1, ph2) {
   query <- paste("select d1.team as team, d1.mean as ph1_mean, d2.mean as ph2_mean, d1.mean-d2.mean as mean_delta from 
-                 (select team, avg(sel) as mean from df where df.df = ")
+                 (select team, avg(sel) as mean from df where df.iteration = ")
   query <- paste0(query, ph1)
-  query <- paste(query, "group by team) as d1, (select team, avg(sel) as mean from df where df.df = ")
+  query <- paste(query, "and df.df = ")
+  query <- paste0(query, item)  
+  query <- paste(query, "group by team) as d1, (select team, avg(sel) as mean from df where df.iteration = ")
   query <- paste(query, ph2)
+  query <- paste(query, "and df.df = ")
+  query <- paste0(query, item)
+  query <- paste(query, "group by team) as d2 where d1.team = d2.team")
+  print(query)
+  return(sqldf(query))
+}
+
+# df: data frame con datos originales
+# item: diferencial semántico (1, 2, ó 3)
+# ph1: Primera fase a considerar
+# ph2: Segunda fase a considerar
+# Retorna un dataframe que contiene para cada grupo la suma de puntaje de la primera fase, 
+# la suma de la segunda, y la diferencia de las sumas
+get_group_sum_deltas <- function(df, item, ph1, ph2) {
+  
+  query <- paste("select d1.team as team, d1.sumscore as ph1_sumscore, d2.sumscore as ph2_sumscore, abs(d1.sumscore-d2.sumscore) as sumscore_delta from 
+                 (select team, sum(sel) as sumscore from df where df.iteration = ")
+  query <- paste0(query, ph1)
+  query <- paste(query, "and df.df = ")
+  query <- paste0(query, item)
+  query <- paste(query, "group by team) as d1, (select team, sum(sel) as sumscore from df where df.iteration = ")
+  query <- paste(query, ph2)
+  query <- paste(query, "and df.df = ")
+  query <- paste0(query, item)
   query <- paste(query, "group by team) as d2 where d1.team = d2.team")
   print(query)
   return(sqldf(query))
@@ -285,31 +303,55 @@ get_group_coef_var <- function(df, ph1, ph2) {
   return(sqldf(query))
 }
 
-add_summary_table_row <- function(table = NA, df, item, phase, row_label) {
-  df_col <- df[df$df == item & df$iteration == phase,]$sel
+sel_col_extract <- function(df, item, phase, ...) {
+  return (df[df$df == item & df$iteration == phase,]$sel)
+}
+
+sel_delta_col_extract <- function(df, item, phase, ...) {
+  phase2 <- list(...)[1]
+  df_deltas <- get_deltas(df, item, phase, phase2)
+  return(df_deltas$delta)
+}
+
+sel_delta_gcoef_col_extract <- function(df, item, phase, ...) {
+  phase2 <- list(...)[1]
+  df_gcvar <- get_group_coef_var(df, item, phase, phase2)
+  return(df_gcvar$delta_vcoef)
+}
+
+
+add_summary_table_row <- function(table = NA, df, item, phase, row_label, extract_func, ...) {
+  df_col <- as.numeric(extract_func(df, item, phase, ...))
   df_sum <- t(as.data.frame(c(summary(df_col), sd(df_col))))
   rownames(df_sum) <- c(row_label)
   colnames(df_sum) <- c(colnames(df_sum)[1:6], "SD")
   
-  if (!is.na(table)) {
+  cond <- !is.na(table)
+  if (length(cond) > 0) {
     table <- rbind.data.frame(table, df_sum)
   }  
   else {
-    table <- df_sum
+     table <- df_sum
   }
-  
+   
   return(table)
 }
 
-build_summary_table <- function(table = NA, df, title_prefix) {
+build_summary_table <- function(table = NA, df, title_prefix, extract_func, ...) {
+  
   for (i in 1:3) {
     table <- add_summary_table_row(table, df, i, 1, 
-                                   paste0(title_prefix, paste(i, "PH1")))
+                                   paste0(title_prefix, paste(i, "PH1")),
+                                   extract_func,
+                                   ...)
     for (j in 2:3) {
       table <- add_summary_table_row(table = table, df, i, j, 
-                                     paste0(title_prefix, paste(i, paste0("PH", j))))
+                                     paste0(title_prefix, paste(i, paste0("PH", j))),
+                                     extract_func,
+                                     ...)
     }
   }
   return(table)
 }
+
 

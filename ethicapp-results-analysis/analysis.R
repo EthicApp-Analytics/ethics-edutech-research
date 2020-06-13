@@ -7,6 +7,7 @@ if(!require(dplyr)){install.packages("dplyr")}
 if(!require(xtable)){install.packages("xtable")}
 if(!require(stats)){install.packages("stats")}
 if(!require(scales)){install.packages("scales")}
+if(!require(quanteda)){install.packages("quanteda")}
 
 #data <- read_excel("./20190405-results.xlsx", "Selection")
 data <- read_excel("./data-ethics-201920/201920-ethics-1-random.xlsx", "Selection")
